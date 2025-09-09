@@ -12,6 +12,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 import jp.co.sss.crud.util.ConstantSQL;
+import jp.co.sss.crud.util.ConstantValue;
 
 /**
  * DB操作処理用のクラス
@@ -200,16 +201,16 @@ public class DBController {
 			connection = DBManager.getConnection();
 			statement = connection.prepareStatement(ConstantSQL.SQL_UPDATE);
 
-			System.out.print("社員名：");
+			System.out.print(ConstantValue.MSG_INPUT_EMPLOYEE_NAME + "：");
 			String employeeName = consoleReader.readLine();
 
-			System.out.print("性別(0:回答しない, 1:男性, 2:女性, 9:その他):");
+			System.out.print(ConstantValue.MSG_INPUT_EMPLOYEE_GENDER + "：");
 			String gender = consoleReader.readLine();
 
-			System.out.print("生年月日(西暦年/月/日)：");
+			System.out.print(ConstantValue.MSG_INPUT_EMPLOYEE_BIRTHDAY + "：");
 			String birthday = consoleReader.readLine();
 
-			System.out.print("部署ID(1：営業部、2：経理部、3：総務部)：");
+			System.out.print(ConstantValue.MSG_INPUT_DEPARTMENT_ID + "：");
 			String deptId = consoleReader.readLine();
 
 			statement.setString(1, employeeName);
