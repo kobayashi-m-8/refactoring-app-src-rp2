@@ -1,8 +1,5 @@
 package jp.co.sss.crud.db;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -10,9 +7,11 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 
+import jp.co.sss.crud.dto.EmployeeDTO;
 import jp.co.sss.crud.util.ConstantSQL;
-import jp.co.sss.crud.util.ConstantValue;
 
 /**
  * DB操作処理用のクラス
@@ -22,159 +21,84 @@ public class DBController {
 	private DBController() {
 	}
 
-	// リファクタリング: find → findAllEmployees
-	public static void findAllEmployees() throws ClassNotFoundException, SQLException {
-		Connection connection = null;
-		PreparedStatement statement = null;
-		ResultSet result = null;
+	// 社員全件検索
+	public static List<EmployeeDTO> findAllEmployees() throws ClassNotFoundException, SQLException {
+		List<EmployeeDTO> employees = new ArrayList<>();
 
-		try {
-			connection = DBManager.getConnection();
-			statement = connection.prepareStatement(ConstantSQL.SQL_ALL_SELECT);
-			result = statement.executeQuery();
+		try (Connection connection = DBManager.getConnection();
+			 PreparedStatement statement = connection.prepareStatement(ConstantSQL.SQL_ALL_SELECT);
+			 ResultSet result = statement.executeQuery()) {
 
-			if (!result.isBeforeFirst()) {
-				System.out.println("該当者はいませんでした");
-				return;
-			}
-
-			System.out.println("社員ID\t社員名\t性別\t生年月日\t部署名");
 			while (result.next()) {
-				System.out.print(result.getString("emp_id") + "\t");
-				System.out.print(result.getString("emp_name") + "\t");
-
-				// リファクタリング: gender → genderCode
-				int genderCode = Integer.parseInt(result.getString("gender"));
-				if (genderCode == 0) {
-					System.out.print("回答なし" + "\t");
-				} else if (genderCode == 1) {
-					System.out.print("男性" + "\t");
-				} else if (genderCode == 2) {
-					System.out.print("女性" + "\t");
-				} else if (genderCode == 9) {
-					System.out.print("その他" + "\t");
-				}
-
-				System.out.print(result.getString("birthday") + "\t");
-				System.out.println(result.getString("dept_name"));
+				EmployeeDTO employee = new EmployeeDTO();
+				employee.setEmpId(result.getInt("emp_id"));
+				employee.setEmpName(result.getString("emp_name"));
+				employee.setGender(result.getInt("gender"));
+				employee.setBirthday(result.getString("birthday"));
+				employee.setDeptName(result.getString("dept_name"));
+				employees.add(employee);
 			}
-			System.out.println("");
-		} finally {
-			DBManager.close(result);
-			DBManager.close(statement);
-			DBManager.close(connection);
 		}
+		return employees;
 	}
 
-	// リファクタリング: findB → findEmployeeByName
-	public static void findEmployeeByName() throws ClassNotFoundException, SQLException, IOException {
-		BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
-		String searchName = consoleReader.readLine();
+	// 社員名検索
+	public static List<EmployeeDTO> findEmployeeByName(String searchName)
+			throws ClassNotFoundException, SQLException {
+		List<EmployeeDTO> employees = new ArrayList<>();
 
-		Connection connection = null;
-		PreparedStatement statement = null;
-		ResultSet result = null;
+		String sql = ConstantSQL.SQL_SELECT_BASIC + ConstantSQL.SQL_SELECT_BY_EMP_NAME;
 
-		try {
-			connection = DBManager.getConnection();
-			String sql = ConstantSQL.SQL_SELECT_BASIC + ConstantSQL.SQL_SELECT_BY_EMP_NAME;
-			statement = connection.prepareStatement(sql);
+		try (Connection connection = DBManager.getConnection();
+			 PreparedStatement statement = connection.prepareStatement(sql)) {
+
 			statement.setString(1, "%" + searchName + "%");
-			result = statement.executeQuery();
-
-			if (!result.isBeforeFirst()) {
-				System.out.println("該当者はいませんでした");
-				return;
-			}
-
-			System.out.println("社員ID\t社員名\t性別\t生年月日\t部署名");
-			while (result.next()) {
-				System.out.print(result.getString("emp_id") + "\t");
-				System.out.print(result.getString("emp_name") + "\t");
-
-				int genderCode = Integer.parseInt(result.getString("gender"));
-				if (genderCode == 0) {
-					System.out.print("回答なし");
-				} else if (genderCode == 1) {
-					System.out.print("男性");
-				} else if (genderCode == 2) {
-					System.out.print("女性");
-				} else if (genderCode == 9) {
-					System.out.print("その他");
+			try (ResultSet result = statement.executeQuery()) {
+				while (result.next()) {
+					EmployeeDTO employee = new EmployeeDTO();
+					employee.setEmpId(result.getInt("emp_id"));
+					employee.setEmpName(result.getString("emp_name"));
+					employee.setGender(result.getInt("gender"));
+					employee.setBirthday(result.getString("birthday"));
+					employee.setDeptName(result.getString("dept_name"));
+					employees.add(employee);
 				}
-
-				System.out.print("\t" + result.getString("birthday") + "\t");
-				System.out.println(result.getString("dept_name"));
 			}
-			System.out.println("");
-		} finally {
-			DBManager.close(result);
-			DBManager.close(statement);
-			DBManager.close(connection);
 		}
+		return employees;
 	}
 
-	// リファクタリング: findC → findEmployeeByDeptId
-	public static void findEmployeeByDeptId(String deptId) throws ClassNotFoundException, SQLException, IOException {
-		Connection connection = null;
-		PreparedStatement statement = null;
-		ResultSet result = null;
+	// 部署ID検索
+	public static List<EmployeeDTO> findEmployeeByDeptId(String deptId)
+			throws ClassNotFoundException, SQLException {
+		List<EmployeeDTO> employees = new ArrayList<>();
 
-		try {
-			connection = DBManager.getConnection();
-			String sql = ConstantSQL.SQL_SELECT_BASIC + ConstantSQL.SQL_SELECT_BY_DEPT_ID;
-			statement = connection.prepareStatement(sql);
+		String sql = ConstantSQL.SQL_SELECT_BASIC + ConstantSQL.SQL_SELECT_BY_DEPT_ID;
+
+		try (Connection connection = DBManager.getConnection();
+			 PreparedStatement statement = connection.prepareStatement(sql)) {
+
 			statement.setInt(1, Integer.parseInt(deptId));
-			result = statement.executeQuery();
-
-			if (!result.isBeforeFirst()) {
-				System.out.println("該当者はいませんでした");
-				return;
-			}
-
-			System.out.println("社員ID\t社員名\t性別\t生年月日\t部署名");
-			while (result.next()) {
-				System.out.print(result.getString("emp_id") + "\t");
-				System.out.print(result.getString("emp_name") + "\t");
-
-				int genderCode = Integer.parseInt(result.getString("gender"));
-				if (genderCode == 0) {
-					System.out.print("回答なし");
-				} else if (genderCode == 1) {
-					System.out.print("男性");
-				} else if (genderCode == 2) {
-					System.out.print("女性");
-				} else if (genderCode == 9) {
-					System.out.print("その他");
-				}
-
-				System.out.print("\t" + result.getString("birthday") + "\t");
-
-				int deptCode = Integer.parseInt(result.getString("dept_id"));
-				if (deptCode == 1) {
-					System.out.println("営業部");
-				} else if (deptCode == 2) {
-					System.out.println("経理部");
-				} else if (deptCode == 3) {
-					System.out.println("総務部");
+			try (ResultSet result = statement.executeQuery()) {
+				while (result.next()) {
+					EmployeeDTO employee = new EmployeeDTO();
+					employee.setEmpId(result.getInt("emp_id"));
+					employee.setEmpName(result.getString("emp_name"));
+					employee.setGender(result.getInt("gender"));
+					employee.setBirthday(result.getString("birthday"));
+					employee.setDeptName(result.getString("dept_name"));
+					employees.add(employee);
 				}
 			}
-			System.out.println("");
-		} finally {
-			DBManager.close(result);
-			DBManager.close(statement);
-			DBManager.close(connection);
 		}
+		return employees;
 	}
 
-	// リファクタリング: insert → insertEmployee
+	// 社員登録
 	public static void insertEmployee(String employeeName, String gender, String birthday, String deptId)
-			throws ClassNotFoundException, SQLException, IOException, ParseException {
-		Connection connection = null;
-		PreparedStatement statement = null;
-		try {
-			connection = DBManager.getConnection();
-			statement = connection.prepareStatement(ConstantSQL.SQL_INSERT);
+			throws ClassNotFoundException, SQLException, ParseException {
+		try (Connection connection = DBManager.getConnection();
+			 PreparedStatement statement = connection.prepareStatement(ConstantSQL.SQL_INSERT)) {
 
 			statement.setString(1, employeeName);
 			statement.setInt(2, Integer.parseInt(gender));
@@ -183,35 +107,15 @@ public class DBController {
 			statement.setInt(4, Integer.parseInt(deptId));
 
 			statement.executeUpdate();
-			System.out.println("社員情報を登録しました");
-		} finally {
-			DBManager.close(statement);
-			DBManager.close(connection);
 		}
 	}
 
-	// リファクタリング: update → updateEmployee
-	public static void updateEmployee(String empId)
-			throws ClassNotFoundException, SQLException, IOException, ParseException {
-		Connection connection = null;
-		PreparedStatement statement = null;
-		BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
+	// 社員更新
+	public static void updateEmployee(String empId, String employeeName, String gender, String birthday, String deptId)
+			throws ClassNotFoundException, SQLException, ParseException {
 
-		try {
-			connection = DBManager.getConnection();
-			statement = connection.prepareStatement(ConstantSQL.SQL_UPDATE);
-
-			System.out.print(ConstantValue.MSG_INPUT_EMPLOYEE_NAME + "：");
-			String employeeName = consoleReader.readLine();
-
-			System.out.print(ConstantValue.MSG_INPUT_EMPLOYEE_GENDER + "：");
-			String gender = consoleReader.readLine();
-
-			System.out.print(ConstantValue.MSG_INPUT_EMPLOYEE_BIRTHDAY + "：");
-			String birthday = consoleReader.readLine();
-
-			System.out.print(ConstantValue.MSG_INPUT_DEPARTMENT_ID + "：");
-			String deptId = consoleReader.readLine();
+		try (Connection connection = DBManager.getConnection();
+			 PreparedStatement statement = connection.prepareStatement(ConstantSQL.SQL_UPDATE)) {
 
 			statement.setString(1, employeeName);
 			statement.setInt(2, Integer.parseInt(gender));
@@ -221,38 +125,18 @@ public class DBController {
 			statement.setInt(5, Integer.parseInt(empId));
 
 			statement.executeUpdate();
-
-		} finally {
-			DBManager.close(statement);
-			DBManager.close(connection);
 		}
 	}
 
-	// リファクタリング: delete → deleteEmployee
-	public static void deleteEmployee() {
-		Connection connection = null;
-		PreparedStatement statement = null;
-		BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
+	// 社員削除
+	public static void deleteEmployee(String empId)
+			throws ClassNotFoundException, SQLException {
 
-		try {
-			connection = DBManager.getConnection();
-			String inputEmployeeId = consoleReader.readLine();
+		try (Connection connection = DBManager.getConnection();
+			 PreparedStatement statement = connection.prepareStatement(ConstantSQL.SQL_DELETE)) {
 
-			statement = connection.prepareStatement(ConstantSQL.SQL_DELETE);
-			statement.setInt(1, Integer.parseInt(inputEmployeeId));
+			statement.setInt(1, Integer.parseInt(empId));
 			statement.executeUpdate();
-
-			System.out.println("社員情報を削除しました");
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				DBManager.close(statement);
-				DBManager.close(connection);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
 		}
 	}
 }
